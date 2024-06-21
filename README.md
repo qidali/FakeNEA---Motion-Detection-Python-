@@ -1,0 +1,3 @@
+Hello, I haven't properly used Github before so this will be flawed.
+As a summary of what the program does, when you run the program, it will open a window that looks similar to what my Wireframe was like, just has an Arm and Disarm button, alongside two video feeds. The first is a live video feed and the other is a video feed for recordings.
+The nice thing that I managed to figure out was how to create a table in the GUI that contains the names of video files captured in the time after you click Arm. These automatically go into the table and you can click the name to select a file, from which you can click the Play button and it will play the clip below the live feed.  
