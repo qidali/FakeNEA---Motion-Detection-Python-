@@ -1,3 +1,5 @@
+# Imports
+
 import numpy as np
 import cv2 as cv
 import time
@@ -6,23 +8,29 @@ import threading
 import sqlite3
 import os
 
+# Forgot what this thing does 
 kernel = np.ones((3, 3), dtype=np.uint8)
-cap = cv.VideoCapture(0)
+cap = cv.VideoCapture(0) # Opens camera 1
+
+# Error handling
+
 if not cap.isOpened():
-    print("Cant open Camera, simply a Skill Issue")
+    print("Cant open Camera, simply a Skill Issue") # VERY UNPROFRESSIONAL
     exit()
 
-ret, frame_last = cap.read()
+ret, frame_last = cap.read() # Checks if a frame is received
 if not ret:
     print("Cant receive frame (Maybe you should have done your helper tasks!)")
-    exit()
+    exit() # Still haven't started derby lol
 
-count = 0
+count = 0 
 gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
-frame_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-event_flag = False
-fourcc = cv.VideoWriter_fourcc(*'MJPG')
+frame_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH)) # why
+frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT)) # why
+event_flag = False # Catches an event for something to happen
+fourcc = cv.VideoWriter_fourcc(*'MJPG') # Codec coding
+
+# SQL yap
 
 connection = sqlite3.connect("motion_events.db")
 cursor = connection.cursor()
@@ -34,6 +42,7 @@ table = """CREATE TABLE LOG (
         );"""
 cursor.execute(table)
 
+# More things to learn
 out = None
 armed = False
 max_videos = 5
@@ -41,16 +50,16 @@ video_files = []
 
 # Here is where the GUI begins, I tried to use the after() method rather than Threading since I couldn't get the latter to work
 root = tk.Tk()
-root.title("Motion Detection System Wowsers")
+root.title("Motion Detection System Wowsers") # Wow
 
 # These are all of the GUI containers where you can then pack buttons and whatnot into
-left_container = tk.Frame(root)
+left_container = tk.Frame(root) # Whats a container :()
 left_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 right_container = tk.Frame(root)
 right_container.pack(side=tk.RIGHT, fill=tk.Y)
 
 # These are the frames for where the Videos will play in the GUI, notice they go into the containers made above
-live_feed_frame = tk.Label(left_container)
+live_feed_frame = tk.Label(left_container) # Ok
 live_feed_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 video_clip_frame = tk.Label(left_container)
 video_clip_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
@@ -81,25 +90,25 @@ def create_new_video():
         out.release()
     
     # Rather than using the 640, 480 that was in the example sir gave, I replaced it with width and height since it for some reason wouldn't fit on my screen otherwise
-    vidname = "video"+str(count)+".avi"
+    vidname = "video"+str(count)+".avi" # That makes sense thanks
     out = cv.VideoWriter(vidname, fourcc, 30, (frame_width, frame_height))
     if not out.isOpened():
-        print("The video output does not work sorry")
+        print("The video output does not work sorry") # its not ok
         out = None
 # This is cool, its adding the names of the videos in a list, then it deletes the older videos when there are more than 5 videos
 # Rather than using the number 5 I used max videos as a variable so then you could change it if you wanted to (Also it didn't actually work when I used a number like 5, not sure why)
-    else:
+    else: # should use an entry box instead icl
         count += 1
         video_files.append(vidname)
         if len(video_files) > max_videos:
-            os.remove(video_files.pop(0))
+            os.remove(video_files.pop(0)) # poop
 # One note is that os is a library that lets you do things with your actual files (as long as they are in the same folder as the code of course)
         update_video_list()
 
 # This lets you select a video file and play it in the Gooey (as Mr Evans would say), displaying each frame in a label 
 def play_video():
     video_path = video_entry.get()
-    if video_path:
+    if video_path: # checks if get() which is from tk
         cap_video = cv.VideoCapture(video_path)
         while cap_video.isOpened():
             ret, frame = cap_video.read()
@@ -108,7 +117,7 @@ def play_video():
 # Here there is a super hit function used called cv_to_tk that is defined below, it is game changing
             frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             frame_processed = cv.cvtColor(frame_rgb, cv.COLOR_RGB2BGR)
-            imgtk = cv_to_tk(frame_processed)
+            imgtk = cv_to_tk(frame_processed) # seems mysterious
             video_clip_frame.imgtk = imgtk
             video_clip_frame.config(image=imgtk)
             video_clip_frame.update()
@@ -117,7 +126,7 @@ def play_video():
         cap_video.release()
 
 # Honestly I just found this somewhere and went kapoosh to add it in here, never knew you could convert from OpenCV to TK
-def cv_to_tk(frame):
+def cv_to_tk(frame): # ok
     return tk.PhotoImage(data=cv.imencode('.ppm', frame)[1].tobytes())
 
 # This gets the list of video files and then adds them to the box on the GUI
@@ -173,6 +182,10 @@ def update_feed():
     cv.drawContours(frame, contours, -1, (0, 255, 0), 3)
 
 # This is just when the time of the video being taken is put into the Database, to be fair I didn't end up being able to output these times in the GUI, I would try now, but I would rather play games haha
+# can u make ur comments multiple lines please
+# im just joking but it is quite nice if you do that
+# idek if u can see this mwahaha
+
     if len(contours) > 0 and armed and not event_flag:
         event_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         cursor.execute("INSERT INTO LOG (Time, Camera_ID) VALUES (?, ?)", (event_time, 1))
@@ -202,5 +215,5 @@ root.mainloop()
 cap.release()
 if out is not None:
     out.release()
-cv.destroyAllWindows()
+cv.destroyAllWindows() # lets all stand together against destroying windows, we should just give them a rest break
 connection.close()
