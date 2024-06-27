@@ -10,7 +10,7 @@ import sqlite3
 kernel = np.ones((3,3), dtype=np.uint8)
 cap = cv.VideoCapture(0)
 if not cap.isOpened():
-    print("Cannot open Camera")
+    print("Can't open Camera, simply a skill issue")
     exit()
 
 ret, frame_last = cap.read()
@@ -19,6 +19,15 @@ gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
 count = 0
 event_flag = False
 fourcc = cv.VideoWriter_fourcc(*'MJPG')
+on = False
+videos = []
+anyOutputs = None
+
+''' Le GUI '''
+
+root = tk.Tk()
+root.title("chair stealer")
+
 
 connection = sqlite3.connect("motion_events.db")
 cursor = connection.cursor()
@@ -34,7 +43,7 @@ cursor.execute(table)
 while True:
     ret, frame = cap.read()
     if not ret:
-        print('Cant receive frame')
+        print('can\'t receive frame (maybe you should have done your helper tasks!)')
         break
 
     gray=cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
