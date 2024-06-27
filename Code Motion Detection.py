@@ -1,20 +1,23 @@
 import numpy as np
 import cv2 as cv
 import time
-import tkinter as tk
-from tkinter import ttk
+import PySimpleGUI as sg
 import threading
 import sqlite3
-
 
 kernel = np.ones((3,3), dtype=np.uint8)
 cap = cv.VideoCapture(0)
 if not cap.isOpened():
-    print("Can't open Camera, simply a skill issue")
+    sg.popup_error("walking skill issue icl")
     exit()
 
 ret, frame_last = cap.read()
-gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
+if ret:
+    gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
+else:
+    sg.popup_error("walking skill issue")
+    cap.release()
+    exit()
 
 count = 0
 event_flag = False
@@ -24,10 +27,15 @@ videos = []
 anyOutputs = None
 
 ''' Le GUI '''
+sg.theme('DarkBlue5')
+layout = [
+    [sg.Image(filename='', key='image')],
+    [sg.Button('Start/Stop', key='capture'),
+    [sg.Button('Exit')]
+    ]
+]
 
-root = tk.Tk()
-root.title("chair stealer")
-
+window = sg.Window('chair stealer', layout)
 
 connection = sqlite3.connect("motion_events.db")
 cursor = connection.cursor()
@@ -39,12 +47,26 @@ table = """CREATE TABLE LOG (
         );"""
 cursor.execute(table)
 
+capturing = False
 
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        print('can\'t receive frame (maybe you should have done your helper tasks!)')
+    event, values = window.read(timeout=20)
+    if event == sg.WIN_CLOSED or event == 'Exit':
         break
+    elif event == 'capture':
+        capturing = not capturing
+
+    if capturing:
+        if capturing:
+            ret, frame = cap.read()
+            if ret:
+                imgbytes = convert_frame_to_display(frame)
+                window['image'].update(data=imgbytes)
+                gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
+            else:
+                sg.popup_error("walking skill issue")
+                break
+
 
     gray=cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     gray_diff=cv.subtract(gray,gray_last)
@@ -61,10 +83,6 @@ while True:
 
     if cv.waitKey(1) == ord('q'):
          break
-    cv.imshow('frame', frame)
-    cv.imshow('gray', gray)
-    cv.imshow('gray_diff', gray_diff)
-    cv.imshow('mask', mask)
 
     vidname = "video"+str(count)+".avi"
     fourcc = cv.VideoWriter_fourcc(*'MJPG')
@@ -72,5 +90,6 @@ while True:
     count+=1
     event_flag=True
 
-
+cap.release()
+cv.destroyAllWindows() # violence
 
