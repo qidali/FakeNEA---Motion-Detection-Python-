@@ -110,20 +110,22 @@ def play_video():
     video_path = video_entry.get()
     if video_path: # checks if get() which is from tk
         cap_video = cv.VideoCapture(video_path)
-        while cap_video.isOpened():
-            ret, frame = cap_video.read()
-            if not ret:
-                break
-# Here there is a super hit function used called cv_to_tk that is defined below, it is game changing
-            frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            frame_processed = cv.cvtColor(frame_rgb, cv.COLOR_RGB2BGR)
-            imgtk = cv_to_tk(frame_processed) # seems mysterious
-            video_clip_frame.imgtk = imgtk
-            video_clip_frame.config(image=imgtk)
-            video_clip_frame.update()
-# You need there to be some delay between each frame being processed otherwise you would be able to fry an egg on your laptop
-            time.sleep(0.001)
+        play_video_loop(cap_video)  # This starts the actual video loop, which is the main thing I changed
+
+def play_video_loop(cap_video):
+    ret, frame = cap_video.read()
+    if not ret:
         cap_video.release()
+        return
+
+    frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+    frame_processed = cv.cvtColor(frame_rgb, cv.COLOR_RGB2BGR)
+    imgtk = cv_to_tk(frame_processed)
+    video_clip_frame.imgtk = imgtk
+    video_clip_frame.config(image=imgtk)
+    video_clip_frame.update()
+    # You need there to be some delay between each frame being processed otherwise you would be able to fry an egg on your laptop
+    root.after(1, play_video_loop, cap_video)
 
 # Honestly I just found this somewhere and went kapoosh to add it in here, never knew you could convert from OpenCV to TK
 def cv_to_tk(frame): # ok
@@ -182,7 +184,7 @@ def update_feed():
     cv.drawContours(frame, contours, -1, (0, 255, 0), 3)
 
 # This is just when the time of the video being taken is put into the Database, to be fair I didn't end up being able to output these times in the GUI, I would try now, but I would rather play games haha
-# can u make ur comments multiple lines please
+# can u make ur comments multiple lines please -> Yeah I will try to do that from now on, sorry
 # im just joking but it is quite nice if you do that
 # idek if u can see this mwahaha
 
