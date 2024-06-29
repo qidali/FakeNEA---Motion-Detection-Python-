@@ -6,16 +6,15 @@ import threading
 import sqlite3
 import os
 
-
 kernel = np.ones((3, 3), dtype=np.uint8)
 cap = cv.VideoCapture(0)
 if not cap.isOpened():
-    print("cannot open camera, walking skill issue")
+    print("Cant open Camera, simply a Skill Issue")
     exit()
 
 ret, frame_last = cap.read()
 if not ret:
-    print("cannot receive frame :( )")
+    print("Cant receive frame (Maybe you should have done your helper tasks!)")
     exit()
 
 gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
@@ -32,38 +31,28 @@ cursor = connection.cursor()
 cursor.execute("DROP TABLE IF EXISTS LOG")
 cursor.execute("""CREATE TABLE LOG (
                     Event_ID INTEGER PRIMARY KEY,
-                    Time TEXT,
                     Camera_ID INTEGER
                 );""")
 
-# arm
-def arm_disarm():
-    global armed
-    if armed:
-        disarm_system()
-        on_or_off_button.config(text="Arm")
-    else:
-        arm_system()
-        on_or_off_button.config(text="Disarm")
-
-def arm_system():
+# Functions for GUI and video processing
+def activate_system():
     global armed
     armed = True
-    start_video_recording()
+    start_recording()
 
-def disarm_system():
+def deactivate_system():
     global armed, out
     armed = False
     if out is not None:
         out.release()
         out = None
 
-def start_video_recording():
+def start_recording():
     if armed:
-        create_new_video()
-        threading.Timer(30, start_video_recording).start() # make it 30s+ using THREADING TIMER
+        create_video()
+        threading.Timer(30, start_recording).start()
 
-def create_new_video():
+def create_video():
     global count, out, video_files
     if out is not None:
         out.release()
@@ -71,56 +60,50 @@ def create_new_video():
     vidname = "video" + str(count) + ".avi"
     out = cv.VideoWriter(vidname, fourcc, 30, (frame_width, frame_height))
     if not out.isOpened():
-        print("The video output does not work sowwy :(")
+        print("The video output does not work sorry")
         out = None
     else:
         count += 1
         video_files.append(vidname)
         if len(video_files) > max_videos:
-            os.remove(video_files.pop(0)) # remove items bigger than 5
-        update_video_list()
+            os.remove(video_files.pop(0))
+        refresh_video_list()
 
-def play_video():
+def play_selected_video():
     video_path = video_entry.get()
     if video_path:
         cap_video = cv.VideoCapture(video_path)
-        new_window = tk.Toplevel(root) # separate window OVER 
-        new_window.title("Video Playback") # now we create a new window for video
-        video_frame = tk.Label(new_window) # adds a new label
-        video_frame.pack(fill=tk.BOTH, expand=True) # fill hrizontal and vertical screen
+        new_window = tk.Toplevel(root)
+        new_window.title("Video Playback")
+        video_frame = tk.Label(new_window)
+        video_frame.pack(fill=tk.BOTH, expand=True)
         while cap_video.isOpened():
             ret, frame = cap_video.read()
             if not ret:
                 break
-            # PROCESSING FOR WORKING VIDEO
             frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             frame_processed = cv.cvtColor(frame_rgb, cv.COLOR_RGB2BGR)
             imgtk = cv_to_tk(frame_processed)
             video_frame.imgtk = imgtk
             video_frame.config(image=imgtk)
             video_frame.update()
-            time.sleep(0.001) # so no lag
+            time.sleep(0.001)
         cap_video.release()
 
-def cv_to_tk(frame): #. ..
+def cv_to_tk(frame):
     return tk.PhotoImage(data=cv.imencode('.ppm', frame)[1].tobytes())
 
-def update_video_list():
+def refresh_video_list():
     video_listbox.delete(0, tk.END)
     for filename in video_files:
-        video_listbox.insert(tk.END, filename) # sounds familiar
+        video_listbox.insert(tk.END, filename)
 
-def on_video_select(event):
-    selected_video = video_listbox.get(video_listbox.curselection())
-    video_entry.delete(0, tk.END)
-    video_entry.insert(0, selected_video)
-
-def update_feed():
+def update_live_feed():
     global frame_last, gray_last, event_flag, out, armed
 
     ret, frame = cap.read()
     if not ret:
-        root.after(10, update_feed)
+        root.after(10, update_live_feed)
         return
 
     gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -133,11 +116,10 @@ def update_feed():
     contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     frame_last = frame
     gray_last = gray
-    cv.drawContours(frame, contours, -1, (255, 32, 78), 3)
+    cv.drawContours(frame, contours, -1, (0, 255, 0), 3)
 
     if len(contours) > 0 and armed and not event_flag:
-        event_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        cursor.execute("INSERT INTO LOG (Time, Camera_ID) VALUES (?, ?)", (event_time, 1))
+        cursor.execute("INSERT INTO LOG (Camera_ID) VALUES (?)", (1,))
         connection.commit()
         event_flag = True
     if event_flag and armed and out is not None:
@@ -149,7 +131,7 @@ def update_feed():
     live_feed_frame.imgtk = imgtk
     live_feed_frame.config(image=imgtk)
 
-    root.after(10, update_feed)
+    root.after(10, update_live_feed)
 
 # GUI setup
 root = tk.Tk()
@@ -170,21 +152,23 @@ button_frame.pack(side=tk.TOP, fill=tk.X)
 log_frame = tk.Frame(control_frame)
 log_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-on_or_off_button = tk.Button(button_frame, text="Arm", command=lambda: arm_disarm())
-on_or_off_button.pack(side=tk.RIGHT, padx=5, pady=5)
+arm_button = tk.Button(button_frame, text="Arm", command=activate_system)
+arm_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+disarm_button = tk.Button(button_frame, text="Disarm", command=deactivate_system)
+disarm_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
 video_entry = tk.Entry(log_frame, width=50)
 video_entry.pack(padx=5, pady=5, fill=tk.X)
 
-play_video_button = tk.Button(log_frame, text="Play Video", command=play_video)
+play_video_button = tk.Button(log_frame, text="Play Video", command=play_selected_video)
 play_video_button.pack(padx=5, pady=5, fill=tk.X)
 
 video_listbox = tk.Listbox(log_frame)
 video_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-video_listbox.bind('<<ListboxSelect>>', on_video_select)
 
-update_video_list()
-update_feed()
+refresh_video_list()
+update_live_feed()
 root.mainloop()
 
 cap.release()
