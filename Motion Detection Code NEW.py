@@ -133,7 +133,7 @@ def update_feed():
     contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     frame_last = frame
     gray_last = gray
-    cv.drawContours(frame, contours, -1, (0, 255, 0), 3)
+    cv.drawContours(frame, contours, -1, (255, 32, 78), 3)
 
     if len(contours) > 0 and armed and not event_flag:
         event_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
