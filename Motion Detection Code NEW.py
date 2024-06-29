@@ -6,16 +6,16 @@ import threading
 import sqlite3
 import os
 
-# Initialize camera and variables
+
 kernel = np.ones((3, 3), dtype=np.uint8)
 cap = cv.VideoCapture(0)
 if not cap.isOpened():
-    print("Cant open Camera, simply a Skill Issue")
+    print("cannot open camera, walking skill issue")
     exit()
 
 ret, frame_last = cap.read()
 if not ret:
-    print("Cant receive frame (Maybe you should have done your helper tasks!)")
+    print("cannot receive frame :( )")
     exit()
 
 gray_last = cv.cvtColor(frame_last, cv.COLOR_BGR2GRAY)
@@ -36,7 +36,7 @@ cursor.execute("""CREATE TABLE LOG (
                     Camera_ID INTEGER
                 );""")
 
-# Functions for GUI and video processing
+# arm
 def arm_disarm():
     global armed
     if armed:
@@ -61,7 +61,7 @@ def disarm_system():
 def start_video_recording():
     if armed:
         create_new_video()
-        threading.Timer(30, start_video_recording).start()
+        threading.Timer(30, start_video_recording).start() # make it 30s+ using THREADING TIMER
 
 def create_new_video():
     global count, out, video_files
@@ -71,43 +71,44 @@ def create_new_video():
     vidname = "video" + str(count) + ".avi"
     out = cv.VideoWriter(vidname, fourcc, 30, (frame_width, frame_height))
     if not out.isOpened():
-        print("The video output does not work sorry")
+        print("The video output does not work sowwy :(")
         out = None
     else:
         count += 1
         video_files.append(vidname)
         if len(video_files) > max_videos:
-            os.remove(video_files.pop(0))
+            os.remove(video_files.pop(0)) # remove items bigger than 5
         update_video_list()
 
 def play_video():
     video_path = video_entry.get()
     if video_path:
         cap_video = cv.VideoCapture(video_path)
-        new_window = tk.Toplevel(root)
-        new_window.title("Video Playback")
-        video_frame = tk.Label(new_window)
-        video_frame.pack(fill=tk.BOTH, expand=True)
+        new_window = tk.Toplevel(root) # separate window OVER 
+        new_window.title("Video Playback") # now we create a new window for video
+        video_frame = tk.Label(new_window) # adds a new label
+        video_frame.pack(fill=tk.BOTH, expand=True) # fill hrizontal and vertical screen
         while cap_video.isOpened():
             ret, frame = cap_video.read()
             if not ret:
                 break
+            # PROCESSING FOR WORKING VIDEO
             frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             frame_processed = cv.cvtColor(frame_rgb, cv.COLOR_RGB2BGR)
             imgtk = cv_to_tk(frame_processed)
             video_frame.imgtk = imgtk
             video_frame.config(image=imgtk)
             video_frame.update()
-            time.sleep(0.001)
+            time.sleep(0.001) # so no lag
         cap_video.release()
 
-def cv_to_tk(frame):
+def cv_to_tk(frame): #. ..
     return tk.PhotoImage(data=cv.imencode('.ppm', frame)[1].tobytes())
 
 def update_video_list():
     video_listbox.delete(0, tk.END)
     for filename in video_files:
-        video_listbox.insert(tk.END, filename)
+        video_listbox.insert(tk.END, filename) # sounds familiar
 
 def on_video_select(event):
     selected_video = video_listbox.get(video_listbox.curselection())
